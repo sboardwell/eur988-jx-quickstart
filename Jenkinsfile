@@ -11,6 +11,7 @@ pipeline {
     CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
     DOCKER_REGISTRY_ORG = 'sboardwell'
   }
+
   stages {
     stage('Pre-check') {
       steps {
