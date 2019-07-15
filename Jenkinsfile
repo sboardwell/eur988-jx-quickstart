@@ -56,7 +56,7 @@ pipeline {
           // delete checked out local branches
           sh '''
             for r in $(git branch | grep -v "HEAD"); do
-              grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -d "$r"
+              grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -D "$r"
             done
 
             git reset --hard
