@@ -45,7 +45,7 @@ pipeline {
               sh 'ls -al'
               sh 'env'
               sh 'dotnet /app/GitVersion.dll || true'
-              input 'wait'
+              //input 'wait'
               sh 'dotnet /app/GitVersion.dll'
               sh 'dotnet /app/GitVersion.dll > version.json'
           }
