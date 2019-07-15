@@ -64,6 +64,7 @@ pipeline {
           env.PREVIEW_VERSION = sh(returnStdout: true, script: "$WORKSPACE/scripts/version_util.sh f FullSemVer").trim().replace('+', '-')
           env.VERSION = env.PREVIEW_VERSION
           echo "VERSION: $VERSION and PREVIEW_VERSION: $PREVIEW_VERSION"
+          addShortText text: "$VERSION"
         }
       }
     }
