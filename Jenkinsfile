@@ -33,7 +33,7 @@ pipeline {
             }
           done
 
-          cat EXISTING_BRANCHES
+          touch EXISTING_BRANCHES && cat EXISTING_BRANCHES
           '''
 
           sh "git branch -a"
