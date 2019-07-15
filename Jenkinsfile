@@ -22,6 +22,7 @@ pipeline {
           sh "git branch -a"
 
           env.ACTUAL_MERGE_HASH = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
+          env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $ACTUAL_MERGE_HASH')
 
           sh '''
           for r in $(git branch -a | grep "remotes/origin" | grep -v "remotes/origin/HEAD"); do
@@ -36,7 +37,7 @@ pipeline {
           '''
 
           sh "git branch -a"
-          sh "git checkout $BRANCH_NAME"
+          sh "git checkout $CHECKOUT_BACK_TO"
 
           container('gitversion') {
               sh 'dotnet /app/GitVersion.dll'
@@ -48,7 +49,7 @@ pipeline {
           // delete checked out local branches
           sh '''
             for r in $(git branch | grep -v "HEAD"); do
-              git branch -d "$r"
+              grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -d "$r"
             done
 
             git reset --hard
