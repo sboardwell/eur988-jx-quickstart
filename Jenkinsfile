@@ -37,14 +37,17 @@ pipeline {
           '''
 
           sh "git branch -a"
-          sh "git checkout $CHECKOUT_BACK_TO"
+          sh "git checkout $BRANCH_NAME"
 
           container('gitversion') {
+              sh 'pwd'
+              sh 'ls -al'
+              input 'wait'
               sh 'dotnet /app/GitVersion.dll'
               sh 'dotnet /app/GitVersion.dll > version.json'
           }
 
-          sh "git checkout -f $ACTUAL_MERGE_HASH"
+          sh "git checkout -f $CHECKOUT_BACK_TO"
 
           // delete checked out local branches
           sh '''
