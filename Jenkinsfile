@@ -19,6 +19,8 @@ pipeline {
           sh "git config --global credential.helper store"
           sh "jx step git credentials"
           sh "git branch -a"
+          sh "git fetch origin"
+          sh "git fetch --tags"
 
           env.ACTUAL_MERGE_HASH = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
           env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $ACTUAL_MERGE_HASH')
@@ -26,7 +28,7 @@ pipeline {
           // fetch CHANGE_TARGET if exists
           sh '[ -z $CHANGE_TARGET ] || git fetch origin $CHANGE_TARGET:$CHANGE_TARGET'
           sh '''
-          for r in $(git branch -a | grep "remotes/origin" | grep -v "remotes/origin/HEAD"); do
+          for r in $(git branch -a | grep -E "remotes/origin/(master|develop|release-.*|PR-.*)"); do
             echo "Remote branch: $r"
             rr="$(echo $r | cut -d/ -f 3)";
             {
