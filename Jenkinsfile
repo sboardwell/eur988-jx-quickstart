@@ -15,7 +15,6 @@ pipeline {
     stage('Pre-check') {
       steps {
         script {
-          input "wait wait wait"
 
           sh "git config --global credential.helper store"
           sh "jx step git credentials"
@@ -24,6 +23,8 @@ pipeline {
           env.ACTUAL_MERGE_HASH = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
           env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $ACTUAL_MERGE_HASH')
 
+          // fetch CHANGE_TARGET if exists
+          sh '[ -z $CHANGE_TARGET ] || git fetch origin $CHANGE_TARGET:$CHANGE_TARGET'
           sh '''
           for r in $(git branch -a | grep "remotes/origin" | grep -v "remotes/origin/HEAD"); do
             echo "Remote branch: $r"
@@ -42,6 +43,8 @@ pipeline {
           container('gitversion') {
               sh 'pwd'
               sh 'ls -al'
+              sh 'env'
+              sh 'dotnet /app/GitVersion.dll || true'
               input 'wait'
               sh 'dotnet /app/GitVersion.dll'
               sh 'dotnet /app/GitVersion.dll > version.json'
@@ -135,4 +138,5 @@ pipeline {
         }
   }
 }
+
 
