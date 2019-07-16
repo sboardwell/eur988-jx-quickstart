@@ -2,12 +2,12 @@ apiVersion: skaffold/v1beta2
 kind: Config
 build:
   artifacts:
-  - image: sboardwell/eur988-jx-quickstart
+  - image: eur988-jx-quickstart
     context: .
     docker: {}
   tagPolicy:
     envTemplate:
-      template: '{{.DOCKER_REGISTRY}}/{{.IMAGE_NAME}}:{{.VERSION}}'
+      template: '{{.DOCKER_REGISTRY}}/{{.DOCKER_REGISTRY_ORG}}/{{.IMAGE_NAME}}:{{.VERSION}}'
   local: {}
 deploy:
   kubectl: {}

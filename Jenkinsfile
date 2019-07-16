@@ -6,10 +6,12 @@ pipeline {
       }
   }
   environment {
-    ORG = 'sboardwell'
-    APP_NAME = 'eur988-jx-quickstart'
-    CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
-    DOCKER_REGISTRY_ORG = 'sboardwell'
+    ORG                 = 'sboardwell'
+    APP_NAME            = 'eur988-jx-quickstart'
+    CHARTMUSEUM_CREDS   = credentials('jenkins-x-chartmuseum')
+    GKE_SA              = credentials('gcr-push-key')
+    DOCKER_REGISTRY     = 'us.gcr.io'
+    DOCKER_REGISTRY_ORG = 'devops-project-200915'
   }
 
   stages {
@@ -21,6 +23,51 @@ pipeline {
           env.VERSION = env.PREVIEW_VERSION
           echo "VERSION: $VERSION and PREVIEW_VERSION: $PREVIEW_VERSION"
           addShortText text: "$VERSION"
+        }
+        sh "gcloud auth activate-service-account gcr-push@${DOCKER_REGISTRY_ORG}.iam.gserviceaccount.com --key-file ${GKE_SA}"
+        sh "gcloud container images list-tags ${DOCKER_REGISTRY}/${DOCKER_REGISTRY_ORG}/${APP_NAME} | head -n 2"
+      }
+    }
+    stage('PR Builds') {
+      when {
+        changeRequest()
+      }
+      steps {
+
+          sh 'export VERSION=$PREVIEW_VERSION && skaffold build -f skaffold.yaml'
+
+          sh "jx step post build --image $DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$PREVIEW_VERSION"
+          dir('./charts/preview') {
+              sh "make preview"
+              sh "jx preview --app $APP_NAME --dir ../.. || helm delete --purge --no-hooks ${PREVIEW_NAMESPACE}"
+          }
+      }
+    }
+    stage('Release Builds') {
+      when {
+        anyOf {
+            branch 'master'
+            branch 'develop'
+            branch 'release-*'
+        }
+      }
+      steps {
+
+        // ensure we're not on a detached head
+        sh "git checkout ${BRANCH_NAME}"
+
+        dir('./charts/eur988-jx-quickstart') {
+            sh "make tag"
+        }
+
+        sh 'skaffold build -f skaffold.yaml'
+
+        sh "jx step post build --image $DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION"
+
+        // fetch the tags since the current checkout doesn't have them.
+        dir ('./charts/eur988-jx-quickstart') {
+            // release the helm chart
+            sh 'jx step helm release'
         }
       }
     }
@@ -93,4 +140,11 @@ def processGitVersion() {
 
   // git reset hard to revert any changes
   sh 'git reset --hard'
+
+  env.PREVIEW_NAMESPACE = sh(
+          returnStdout: true,
+          script: "echo \"jx-\$(git config --get remote.origin.url | sed -e 's|https://github.com/||' -e 's|.git\$||' -e 's|/|-|')-pr-${BRANCH_NAME.replaceAll('^(pr|PR)-', '')}\" | tr '[:upper:]' '[:lower:]'"
+  ).trim()
+  echo "My preview ns will be: ${PREVIEW_NAMESPACE}"
+
 }
