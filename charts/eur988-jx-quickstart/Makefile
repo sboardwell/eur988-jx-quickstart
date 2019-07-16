@@ -2,7 +2,7 @@ CHART_REPO := http://jenkins-x-chartmuseum:8080
 CURRENT=$(pwd)
 NAME := eur988-jx-quickstart
 OS := $(shell uname)
-RELEASE_VERSION := $(shell cat ../../VERSION)
+RELEASE_VERSION := $(VERSION)
 
 build: clean
 	rm -rf requirements.lock
