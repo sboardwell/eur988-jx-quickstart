@@ -11,6 +11,7 @@ pipeline {
     CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
     DOCKER_REGISTRY_ORG = 'sboardwell'
   }
+
   stages {
     stage('Pre-check') {
       steps {
@@ -25,8 +26,9 @@ pipeline {
 
           // fetch CHANGE_TARGET if exists
           sh '[ -z $CHANGE_TARGET ] || git fetch origin $CHANGE_TARGET:$CHANGE_TARGET'
+          sh 'for b in $(git ls-remote --quiet --heads origin master develop release-* | sed "s:.*/::g"); do git fetch origin $b:$b; done'
           sh '''
-          for r in $(git branch -a | grep "remotes/origin" | grep -v "remotes/origin/HEAD"); do
+          for r in $(git branch -a | grep -E "remotes/origin/(master|develop|release-.*|PR-.*)"); do
             echo "Remote branch: $r"
             rr="$(echo $r | cut -d/ -f 3)";
             {
@@ -55,7 +57,7 @@ pipeline {
           // delete checked out local branches
           sh '''
             for r in $(git branch | grep -v "HEAD"); do
-              grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -d "$r"
+              grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -D "$r"
             done
 
             git reset --hard
