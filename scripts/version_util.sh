@@ -140,6 +140,7 @@ function merge_release() {
   merge_source_into_target $workingBr $developBr
   merge_source_into_target $workingBr $masterBr
   delete_branch $workingBr
+  tag_branch "$GF_MASTER"
 }
 
 function merge_hotfix() {
@@ -148,6 +149,7 @@ function merge_hotfix() {
   workingBr=$(ensure_single_branch "$GF_HOTFIX_PATTERN" true)
   merge_source_into_target $workingBr $masterBr
   delete_branch $workingBr
+  tag_branch "$GF_MASTER"
 }
 
 function tag_branch() {
