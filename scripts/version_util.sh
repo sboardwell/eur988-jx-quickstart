@@ -37,6 +37,13 @@ function prereqs() {
   else
     die "No gitversion and no docker "
   fi
+  if jq -h &> /dev/null; then
+    JQ_CMD="jq"
+  elif docker info &> /dev/null; then
+    JQ_CMD="docker run -i --rm diversario/eks-tools:0.0.3 jq"
+  else
+    die "No gitversion and no docker "
+  fi
 }
 
 function run_cmd() {
@@ -48,7 +55,7 @@ function run_cmd() {
 function get_field() {
   prereqs
   if [ -n "${1:-}" ]; then
-    ${GITVERSION_CMD} /showvariable ${1}
+    ${GITVERSION_CMD} | ${JQ_CMD} -r .${1}
   else
     ${GITVERSION_CMD}
   fi
@@ -77,12 +84,6 @@ function ensure_no_branch() {
   [ -z "$branches" ] || { echo -e "Branches found:\n$branches"; die "Remote branch(es) matching '$pattern' ALREADY exist. See above."; }
 }
 
-function checkout_branch() {
-  local branch=$1
-  git checkout $branch
-  git pull origin $branch
-}
-
 function create_branch() {
   local sourceBranch=$1
   local targetBranch=$2
@@ -91,6 +92,8 @@ function create_branch() {
   read -p "Target branch [$targetBranch]: " targetBranchInput
   targetBranch=${targetBranchInput:-$targetBranch}
   confirm "Create branch '$targetBranch' from source '$sourceBranch'"
+  git checkout $sourceBranch
+  git pull origin $sourceBranch
   git checkout -b $targetBranch
   git push --set-upstream origin $targetBranch
 }
@@ -99,8 +102,10 @@ function merge_source_into_target() {
   local source=$1
   local target=$2
   confirm "Will merge release '$source' into '$target'"
-  checkout_branch $source
-  checkout_branch $target
+  git checkout $source
+  git pull origin $source
+  git checkout $target
+  git pull origin $target
   git merge $source
   git push origin $target
 }
@@ -150,17 +155,6 @@ function merge_hotfix() {
   delete_branch $workingBr
 }
 
-function tag_branch() {
-  local workingBr=$1
-  local tag
-  workingBr=$(ensure_single_branch "$workingBr" true)
-  checkout_branch $workingBr
-  tag="v$(run_cmd /showvariable SemVer)"
-  confirm "Will tag branch '$workingBr' with '$tag'"
-  git tag -am "Add tag '$tag' (performed by $USER)" $tag
-  git push origin $tag
-}
-
 function finish {
   if [ -n "${original_branch:-}" ]; then
     echo "Returning to original branch '$original_branch'."
@@ -186,12 +180,6 @@ elif [[ $ARG == 'f' ]]; then
 elif [[ $ARG == 'create_release' ]]; then
   ensure_pristine_workspace
   create_release $@
-elif [[ $ARG == 'tag_release' ]]; then
-  ensure_pristine_workspace
-  tag_branch "$GF_RELEASE_PATTERN" $@
-elif [[ $ARG == 'tag_master' ]]; then
-  ensure_pristine_workspace
-  tag_branch "$GF_MASTER" $@
 elif [[ $ARG == 'create_hotfix' ]]; then
   ensure_pristine_workspace
   create_hotfix $@
