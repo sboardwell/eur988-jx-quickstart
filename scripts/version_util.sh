@@ -8,10 +8,14 @@ function dieGracefully() { echo "$@" 1>&2 ; exit 0; }
 
 function confirm () {
     # call with a prompt string or use a default
-    read -p "${1:-Are you sure?} [y/N]" -n 1 -r
-    [ -n "$REPLY" ] && echo    # (optional) move to a new line
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        dieGracefully "Received '${REPLY:-N}'. ${2:-Exiting gracefully}."
+    local default_answer='Y'
+    read -p "${1:-Are you sure?} [Y/n]" default_answer_input
+    default_answer=${default_answer_input:-$default_answer}
+    #[ -n "$REPLY" ] && echo    # (optional) move to a new line
+    if [[ $default_answer =~ ^[Nn]$ ]]; then
+        dieGracefully "Received '${default_answer:-N}'. ${2:-Exiting gracefully}."
+    elif [[ ! $default_answer =~ ^[Yy]$ ]]; then
+        die "Did not recognise answer '${default_answer:-N}'."
     fi
 }
 
