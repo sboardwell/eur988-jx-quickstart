@@ -15,10 +15,18 @@ merge_release:  ## Merges release branch to develop and master
 
 	@$(ROOT)/scripts/version_util.sh $@ $(PWD)
 
+tag_release:  ## Tags the HEAD of the release branch with the SemVer
+
+	@$(ROOT)/scripts/version_util.sh $@ $(PWD)
+
 create_hotfix:  ## Bumps hotfix version and creates a hotfix branch
 
 	@$(ROOT)/scripts/version_util.sh $@ $(PWD)
 
 merge_hotfix:  ## Merges hotfix branch to master
+
+	@$(ROOT)/scripts/version_util.sh $@ $(PWD)
+
+tag_master:  ## Tags the HEAD of the release branch with the SemVer
 
 	@$(ROOT)/scripts/version_util.sh $@ $(PWD)
