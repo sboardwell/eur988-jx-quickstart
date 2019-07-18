@@ -37,6 +37,13 @@ function prereqs() {
   else
     die "No gitversion and no docker "
   fi
+  if jq -h &> /dev/null; then
+    JQ_CMD="jq"
+  elif docker info &> /dev/null; then
+    JQ_CMD="docker run -i --rm diversario/eks-tools:0.0.3 jq"
+  else
+    die "No gitversion and no docker "
+  fi
 }
 
 function run_cmd() {
@@ -48,7 +55,7 @@ function run_cmd() {
 function get_field() {
   prereqs
   if [ -n "${1:-}" ]; then
-    ${GITVERSION_CMD} /showvariable ${1}
+    ${GITVERSION_CMD} | ${JQ_CMD} -r .${1}
   else
     ${GITVERSION_CMD}
   fi
