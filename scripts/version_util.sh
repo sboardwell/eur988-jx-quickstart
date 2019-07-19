@@ -84,6 +84,12 @@ function ensure_no_branch() {
   [ -z "$branches" ] || { echo -e "Branches found:\n$branches"; die "Remote branch(es) matching '$pattern' ALREADY exist. See above."; }
 }
 
+function checkout_branch() {
+  local branch=$1
+  git checkout $branch
+  git pull origin $branch
+}
+
 function create_branch() {
   local sourceBranch=$1
   local targetBranch=$2
@@ -92,8 +98,6 @@ function create_branch() {
   read -p "Target branch [$targetBranch]: " targetBranchInput
   targetBranch=${targetBranchInput:-$targetBranch}
   confirm "Create branch '$targetBranch' from source '$sourceBranch'"
-  git checkout $sourceBranch
-  git pull origin $sourceBranch
   git checkout -b $targetBranch
   git push --set-upstream origin $targetBranch
 }
@@ -102,10 +106,8 @@ function merge_source_into_target() {
   local source=$1
   local target=$2
   confirm "Will merge release '$source' into '$target'"
-  git checkout $source
-  git pull origin $source
-  git checkout $target
-  git pull origin $target
+  checkout_branch $source
+  checkout_branch $target
   git merge $source
   git push origin $target
 }
@@ -113,7 +115,7 @@ function merge_source_into_target() {
 function delete_branch() {
   local branch=$1
   confirm "Will delete branch '$branch' both locally and remote."
-  git branch delete $branch
+  git branch -d $branch
   git push origin :$branch
 }
 
@@ -145,6 +147,7 @@ function merge_release() {
   merge_source_into_target $workingBr $developBr
   merge_source_into_target $workingBr $masterBr
   delete_branch $workingBr
+  tag_branch "$GF_MASTER"
 }
 
 function merge_hotfix() {
@@ -153,6 +156,18 @@ function merge_hotfix() {
   workingBr=$(ensure_single_branch "$GF_HOTFIX_PATTERN" true)
   merge_source_into_target $workingBr $masterBr
   delete_branch $workingBr
+  tag_branch "$GF_MASTER"
+}
+
+function tag_branch() {
+  local workingBr=$1
+  local tag
+  workingBr=$(ensure_single_branch "$workingBr" true)
+  checkout_branch $workingBr
+  tag="v$(run_cmd /showvariable SemVer)"
+  confirm "Will tag branch '$workingBr' with '$tag'"
+  git tag -am "Add tag '$tag' (performed by $USER)" $tag
+  git push origin $tag
 }
 
 function finish {
@@ -180,6 +195,12 @@ elif [[ $ARG == 'f' ]]; then
 elif [[ $ARG == 'create_release' ]]; then
   ensure_pristine_workspace
   create_release $@
+elif [[ $ARG == 'tag_release' ]]; then
+  ensure_pristine_workspace
+  tag_branch "$GF_RELEASE_PATTERN" $@
+elif [[ $ARG == 'tag_master' ]]; then
+  ensure_pristine_workspace
+  tag_branch "$GF_MASTER" $@
 elif [[ $ARG == 'create_hotfix' ]]; then
   ensure_pristine_workspace
   create_hotfix $@
