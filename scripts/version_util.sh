@@ -65,7 +65,7 @@ function ensure_pristine_workspace() {
   local git_status
   git_status=$(git status -s)
   original_branch=$(git symbolic-ref --short HEAD)
-  #[ -z "$git_status" ]  || { echo -e "Changes found:\n$git_status\n"; die "Workspace must be free of changes. See above and please correct."; }
+  [ -z "$git_status" ]  || { echo -e "Changes found:\n$git_status\n"; die "Workspace must be free of changes. See above and please correct."; }
 }
 
 function ensure_single_branch() {
@@ -108,7 +108,7 @@ function merge_source_into_target() {
   confirm "Will merge release '$source' into '$target'"
   checkout_branch $source
   checkout_branch $target
-  git merge $source
+  git merge $source -m "Merge branch '$source'"
   git push origin $target
 }
 
