@@ -44,5 +44,5 @@ else
 endif
 	git add -u
 	git commit -m "Official Release $(RELEASE_VERSION)" --allow-empty # if first release then no verion update is performed
-	git tag -fa V$(RELEASE_VERSION) -m "Official Release $(RELEASE_VERSION)"
-	git push origin V$(RELEASE_VERSION)
+	git tag -fa ver$(RELEASE_VERSION) -m "Official Release $(RELEASE_VERSION)"
+	git push origin ver$(RELEASE_VERSION)
