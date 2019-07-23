@@ -3,8 +3,8 @@
 # Declare variables to be passed into your templates.
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: us.gcr.io/devops-project-200915/eur988-jx-quickstart
+  tag: 2.9.0-beta.2-3
   pullPolicy: IfNotPresent
 
 # define environment variables here as a map of key: value
