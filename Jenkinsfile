@@ -83,7 +83,7 @@ def processGitVersion() {
   // Set git auths
   sh "git config --global credential.helper store"
   sh "jx step git credentials"
-
+  env.IGNORE_NORMALISATION_GIT_HEAD_MOVE = 1
   // Determine the current checkout stage (branch vs merge commit with detached head)
   env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $(git rev-parse --verify HEAD)')
 
