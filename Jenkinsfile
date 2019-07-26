@@ -83,9 +83,32 @@ def processGitVersion() {
   // Set git auths
   sh "git config --global credential.helper store"
   sh "jx step git credentials"
-  env.IGNORE_NORMALISATION_GIT_HEAD_MOVE = 1
-  // Determine the current checkout stage (branch vs merge commit with detached head)
-  env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $(git rev-parse --verify HEAD)')
+
+  // special case if (a) PR, (b) Merge commit
+  // then we need to allow IGNORE_NORMALISATION_GIT_HEAD_MOVE = 1
+  env.IGNORE_NORMALISATION_GIT_HEAD_MOVE = sh(
+    returnStdout: true, 
+    script: '''
+      # if on a PR
+      if git config --local --get-all remote.origin.fetch | grep -q refs\\/pull; then
+        # if is merge commit
+        if [ $(git show -s --pretty=%p HEAD | wc -w) -gt 1 ]; then 
+          echo -n 1
+        else
+          echo -n 0
+        fi
+      else
+        echo -n 0
+      fi
+    '''
+  )
+
+  // Determine the current checkout (branch vs merge commit with detached head)
+  env.CHECKOUT_BACK_TO = sh(
+    returnStdout: true, 
+    script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $(git rev-parse --verify HEAD)'
+  )
+    
 
   // Fetch CHANGE_TARGET and CHANGE_BRANCH if exists
   sh '[ -z $CHANGE_BRANCH ] || git fetch origin $CHANGE_BRANCH:$CHANGE_BRANCH'
@@ -119,7 +142,8 @@ def processGitVersion() {
   //
   // The version is not so relevant in a PR so we decided to just use the branch
   // under test.
-  sh "git checkout $BRANCH_NAME"
+  //sh "git checkout $BRANCH_NAME"
+  sh "git checkout $CHECKOUT_BACK_TO"
 
   container('gitversion') {
       // 2 lines below are for debug purposes - uncomment if needed
