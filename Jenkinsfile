@@ -49,6 +49,7 @@ pipeline {
             branch 'master'
             branch 'develop'
             branch 'release-*'
+            branch 'hotfix-*'
         }
       }
       steps {
