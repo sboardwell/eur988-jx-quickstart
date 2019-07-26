@@ -49,6 +49,7 @@ pipeline {
             branch 'master'
             branch 'develop'
             branch 'release-*'
+            branch 'hotfix-*'
         }
       }
       steps {
@@ -158,7 +159,8 @@ def processGitVersion() {
 
   // Clean up - delete local branches checked out previously. leaving EXISTING_BRANCHES
   sh '''
-    for r in $(git branch | grep -v "HEAD"); do
+    git branch | grep -v HEAD
+    for r in $(git branch | grep -v $(git rev-parse --abbrev-ref HEAD)); do
       grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -D "$r"
     done
   '''
