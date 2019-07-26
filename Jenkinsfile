@@ -87,17 +87,18 @@ def processGitVersion() {
   // Determine the current checkout stage (branch vs merge commit with detached head)
   env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $(git rev-parse --verify HEAD)')
 
-  // Fetch CHANGE_TARGET if exists
+  // Fetch CHANGE_TARGET and CHANGE_BRANCH if exists
+  sh '[ -z $CHANGE_BRANCH ] || git fetch origin $CHANGE_BRANCH:$CHANGE_BRANCH'
   sh '[ -z $CHANGE_TARGET ] || git fetch origin $CHANGE_TARGET:$CHANGE_TARGET'
 
   // Fetch default default branches needed for gitversion
   // - these are the same as with the gitflow (master or stable, develop or dev, release-*)
-  sh 'for b in $(git ls-remote --quiet --heads origin master develop release-* | sed "s:.*/::g"); do git fetch origin $b:$b; done'
+  sh 'for b in $(git ls-remote --quiet --heads origin master develop release-* hotfix-* | sed "s:.*/::g"); do git fetch origin $b:$b; done'
 
   // Checkout aforementioned branches adding any previously existing branches to the EXISTING_BRANCHES file.
   sh '''
   touch EXISTING_BRANCHES
-  for r in $(git branch -a | grep -E "remotes/origin/(master|develop|release-.*|PR-.*)"); do
+  for r in $(git branch -a | grep -E "remotes/origin/(master|develop|release-.*|hotfix-*|PR-.*)"); do
     echo "Remote branch: $r"
     rr="$(echo $r | cut -d/ -f 3)";
     {
