@@ -85,20 +85,44 @@ def processGitVersion() {
   sh "git config --global credential.helper store"
   sh "jx step git credentials"
 
-  // Determine the current checkout stage (branch vs merge commit with detached head)
-  env.CHECKOUT_BACK_TO = sh(returnStdout: true, script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $(git rev-parse --verify HEAD)')
+  // special case if (a) PR, (b) Merge commit
+  // then we need to allow IGNORE_NORMALISATION_GIT_HEAD_MOVE = 1
+  env.IGNORE_NORMALISATION_GIT_HEAD_MOVE = sh(
+    returnStdout: true, 
+    script: '''
+      # if on a PR
+      if git config --local --get-all remote.origin.fetch | grep -q refs\\/pull; then
+        # if is merge commit
+        if [ $(git show -s --pretty=%p HEAD | wc -w) -gt 1 ]; then 
+          echo -n 1
+        else
+          echo -n 0
+        fi
+      else
+        echo -n 0
+      fi
+    '''
+  )
 
-  // Fetch CHANGE_TARGET if exists
+  // Determine the current checkout (branch vs merge commit with detached head)
+  env.CHECKOUT_BACK_TO = sh(
+    returnStdout: true, 
+    script: 'git symbolic-ref HEAD &> /dev/null && echo -n $BRANCH_NAME || echo -n $(git rev-parse --verify HEAD)'
+  )
+    
+
+  // Fetch CHANGE_TARGET and CHANGE_BRANCH if exists
+  sh '[ -z $CHANGE_BRANCH ] || git fetch origin $CHANGE_BRANCH:$CHANGE_BRANCH'
   sh '[ -z $CHANGE_TARGET ] || git fetch origin $CHANGE_TARGET:$CHANGE_TARGET'
 
   // Fetch default default branches needed for gitversion
   // - these are the same as with the gitflow (master or stable, develop or dev, release-*)
-  sh 'for b in $(git ls-remote --quiet --heads origin master develop release-* | sed "s:.*/::g"); do git fetch origin $b:$b; done'
+  sh 'for b in $(git ls-remote --quiet --heads origin master develop release-* hotfix-* | sed "s:.*/::g"); do git fetch origin $b:$b; done'
 
   // Checkout aforementioned branches adding any previously existing branches to the EXISTING_BRANCHES file.
   sh '''
   touch EXISTING_BRANCHES
-  for r in $(git branch -a | grep -E "remotes/origin/(master|develop|release-.*|PR-.*)"); do
+  for r in $(git branch -a | grep -E "remotes/origin/(master|develop|release-.*|hotfix-*|PR-.*)"); do
     echo "Remote branch: $r"
     rr="$(echo $r | cut -d/ -f 3)";
     {
@@ -119,7 +143,8 @@ def processGitVersion() {
   //
   // The version is not so relevant in a PR so we decided to just use the branch
   // under test.
-  sh "git checkout $BRANCH_NAME"
+  //sh "git checkout $BRANCH_NAME"
+  sh "git checkout $CHECKOUT_BACK_TO"
 
   container('gitversion') {
       // 2 lines below are for debug purposes - uncomment if needed
@@ -134,7 +159,8 @@ def processGitVersion() {
 
   // Clean up - delete local branches checked out previously. leaving EXISTING_BRANCHES
   sh '''
-    for r in $(git branch | grep -v "HEAD"); do
+    git branch | grep -v HEAD
+    for r in $(git branch | grep -v $(git rev-parse --abbrev-ref HEAD)); do
       grep -E "^${r}$" EXISTING_BRANCHES && echo "Not deleting exsting branch '$r'." || git branch -D "$r"
     done
   '''
