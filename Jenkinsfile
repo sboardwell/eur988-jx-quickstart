@@ -26,6 +26,7 @@ pipeline {
         }
         sh "gcloud auth activate-service-account gcr-push@${DOCKER_REGISTRY_ORG}.iam.gserviceaccount.com --key-file ${GKE_SA}"
         sh "gcloud container images list-tags ${DOCKER_REGISTRY}/${DOCKER_REGISTRY_ORG}/${APP_NAME} | head -n 2"
+        echo "Hello"
       }
     }
     stage('PR Builds') {
