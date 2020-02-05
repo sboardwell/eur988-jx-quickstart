@@ -14,8 +14,8 @@ JIRA-1234: ...
 Fixes:     ## any related jira tickets
 
 ## Checklist:
-[]: Migration tests needed?
-[]: UAT tests needed?
+- [] Migration tests needed?
+- [] UAT tests needed?
 
 
 
