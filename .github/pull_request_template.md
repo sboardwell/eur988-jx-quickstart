@@ -1,17 +1,21 @@
----
-name: "Pull Request"
-title: "JIRA-1234: "
----
+JIRA-1234: ...
 
+---
 ## What?
-
-Also fixes: # any related jira tickets
 
 ...
 
 ## Why?
 
+...
+
+## Related Tickets
+
+Fixes:     ## any related jira tickets
 
 ## Checklist:
-[]: migration tests needed?
+[]: Migration tests needed?
 []: UAT tests needed?
+
+
+
